@@ -1,4 +1,4 @@
-import { createHmac } from 'node:crypto';
+import { generateSignature } from './generateSignature';
 
 interface ISignOptions {
   data: Record<string, any>; // Data to be signed
@@ -6,7 +6,7 @@ interface ISignOptions {
   secret: string;            // Secret key used for signing
 }
 
-export function sign(options: ISignOptions){
+export function sign({ data, exp, secret }: ISignOptions) {
   // Header
   const header = {
     alg: "HS256",       // Algorithm used for signing
@@ -19,9 +19,9 @@ export function sign(options: ISignOptions){
 
   // Payload
   const payload = {
-    ...options.data,    // Include the data to be signed
+    ...data,            // Include the data to be signed
     iat: Date.now(),    // Issued at time
-    exp: options.exp,   // Expiration time
+    exp,                // Expiration time
   };
 
   const base64EncodedPayload = Buffer
@@ -29,11 +29,11 @@ export function sign(options: ISignOptions){
     .toString('base64url');
 
   // Signature
-  const hmac = createHmac('sha256', options.secret);
-  const signature = hmac.update(
-    `${base64EncodedHeader}.${base64EncodedPayload}`)
-    .digest('base64url');
-    
-  
+  const signature = generateSignature({
+    header: base64EncodedHeader,
+    payload: base64EncodedPayload,
+    secret
+  });
+
   return `${base64EncodedHeader}.${base64EncodedPayload}.${signature}`;
 }
